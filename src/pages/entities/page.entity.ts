@@ -6,6 +6,7 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm'
 
 export enum StatusEnum {
@@ -19,14 +20,13 @@ export class Page {
   id: number
 
   @Column()
-  pageTitle: string
+  title: string
 
   @CreateDateColumn()
   createAt: Date
 
-  @Column()
-  author: string
-  role: UserRoleListEnum
+  @UpdateDateColumn()
+  updateAt: Date
 
   @Column({
     type: 'enum',

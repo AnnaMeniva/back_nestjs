@@ -1,26 +1,62 @@
-import { Injectable } from '@nestjs/common';
-import { CreatePageDto } from './dto/create-page.dto';
-import { UpdatePageDto } from './dto/update-page.dto';
+import { Injectable, NotFoundException } from '@nestjs/common'
+import { CreatePageDto } from './dto/create-page.dto'
+import { UpdatePageDto } from './dto/update-page.dto'
+import { Repository } from 'typeorm'
+import { Page } from './entities/page.entity'
+import { InjectRepository } from '@nestjs/typeorm'
+import { NotFoundError } from 'rxjs'
 
 @Injectable()
 export class PagesService {
-  create(createPageDto: CreatePageDto) {
-    return 'This action adds a new page';
+  constructor(
+    @InjectRepository(Page)
+    private readonly pageRepository: Repository<Page>,
+  ) {}
+
+  async create(createPageDto: CreatePageDto, id: number) {
+    const newPage = {
+      title: createPageDto.title,
+      user: { id },
+    }
+    const res = await this.pageRepository
+      .save(newPage)
+      .catch((err) => console.log(err))
+    return res
   }
 
-  findAll() {
-    return `This action returns all pages`;
+  async findAll() {
+    return await this.pageRepository.find({
+      where: {},
+      relations: {
+        user: true,
+      },
+    })
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} page`;
+  async findOne(id: number) {
+    const page = await this.pageRepository.findOne({
+      where: { id },
+      relations: { user: true },
+    })
+    if (!page) throw new NotFoundException('Page not found')
+
+    return page
   }
 
-  update(id: number, updatePageDto: UpdatePageDto) {
-    return `This action updates a #${id} page`;
+  async update(id: number, updatePageDto: UpdatePageDto) {
+    const page = await this.pageRepository.findOne({
+      where: { id },
+      relations: { user: true },
+    })
+    if(!page) throw new NotFoundException('Page not found')
+    return await this.pageRepository.update(id, updatePageDto)
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} page`;
+ async remove(id: number) {
+    const page = await this.pageRepository.findOne({
+      where: { id },
+      relations: { user: true },
+    })
+    return await this.pageRepository.delete(id)
   }
 }

@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm'
@@ -42,6 +43,7 @@ export class User {
   createAt: Date
 
   @OneToMany(() => Page, (page) => page.user, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'page_id' })
   pages: Page[]
 
   @OneToMany(() => File, (file) => file.user, { onDelete: 'CASCADE' })
