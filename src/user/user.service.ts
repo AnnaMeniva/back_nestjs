@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -6,6 +10,7 @@ import { User } from './entities/user.entity'
 import { Repository } from 'typeorm'
 import * as argon2 from 'argon2'
 import { JwtService } from '@nestjs/jwt'
+import { findUserDto } from './dto/find-user.dto'
 
 @Injectable()
 export class UserService {
@@ -33,16 +38,20 @@ export class UserService {
     return { user, token }
   }
 
-  findAll() {
-    return this.userRepository.find({})
+  async findAll(find: findUserDto) {
+    const users = await this.userRepository.find({ where: find })
+    if (!users.length) throw new NotFoundException('users not found')
+    return users
   }
 
-  async findOne(email: string) {
-    return await this.userRepository.findOne({
+  async findOne(id: number) {
+    const user = await this.userRepository.findOne({
       where: {
-        email,
+        id,
       },
     })
+    if (!user) throw new NotFoundException('User not found')
+    return user
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {

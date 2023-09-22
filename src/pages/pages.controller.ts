@@ -10,11 +10,13 @@ import {
   Req,
   ValidationPipe,
   UsePipes,
+  Query,
 } from '@nestjs/common'
 import { PagesService } from './pages.service'
 import { CreatePageDto } from './dto/create-page.dto'
 import { UpdatePageDto } from './dto/update-page.dto'
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard'
+import { SortPageDto } from './dto/sort-page.dto'
 
 @Controller('pages')
 export class PagesController {
@@ -24,14 +26,13 @@ export class PagesController {
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe())
   create(@Body() createPageDto: CreatePageDto, @Req() req) {
-    console.log(createPageDto)
     return this.pagesService.create(createPageDto, +req.user.id)
   }
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  findAll() {
-    return this.pagesService.findAll()
+  findAll(@Query() sort: SortPageDto) {
+    return this.pagesService.findAll(sort)
   }
 
   @Get(':id')

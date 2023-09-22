@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { CreateFileDto } from './dto/create-file.dto'
 import { UpdateFileDto } from './dto/update-file.dto'
 import { Repository } from 'typeorm'
 import { File } from './entities/file.entity'
 import { InjectRepository } from '@nestjs/typeorm'
+import { SortFileDto } from './dto/sort-file.dto'
 
 @Injectable()
 export class FilesService {
@@ -13,28 +14,53 @@ export class FilesService {
   ) {}
 
   async create(createFileDto: CreateFileDto, id: number) {
-    const newFile ={
+    const newFile = {
       titleFile: createFileDto.titleFile,
-      user:{
-        id
-      }
+      user: {
+        id,
+      },
     }
     return await this.fileRepository.save(newFile)
   }
 
-  findAll() {
-    return `This action returns all files`
+  async findAll(sort: SortFileDto) {
+    return await this.fileRepository.find({
+      where: {},
+      order: { ...sort },
+      relations: {
+        user: true,
+      },
+    })
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} file`
+  async findOne(id: number) {
+    const file = await this.fileRepository.findOne({
+      where: { id },
+      relations: { user: true },
+    })
+    if (!file) throw new NotFoundException('File not found')
+
+    return file
   }
 
-  update(id: number, updateFileDto: UpdateFileDto) {
-    return `This action updates a #${id} file`
+  async update(id: number, updateFileDto: UpdateFileDto) {
+    const file = await this.fileRepository.findOne({
+      where: { id },
+      relations: {
+        user: true,
+      },
+    })
+    if(!file) throw new NotFoundException('File not found')
+    return await this.fileRepository.update(id, updateFileDto)
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} file`
+  async remove(id: number) {
+    const file = await this.fileRepository.findOne({
+      where:{id},
+      relations:{
+        user: true
+      }
+    })
+    return await this.fileRepository.delete(id)
   }
 }

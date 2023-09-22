@@ -9,7 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm'
 
-export enum StatusEnum {
+export enum PageStatusEnum {
   PUBLISHED = 'published',
   UNPUBLISHED = 'unpublished',
 }
@@ -30,10 +30,10 @@ export class Page {
 
   @Column({
     type: 'enum',
-    enum: StatusEnum,
-    default: StatusEnum.UNPUBLISHED,
+    enum: PageStatusEnum,
+    default: PageStatusEnum.UNPUBLISHED,
   })
-  status: StatusEnum
+  status: PageStatusEnum
 
   @ManyToOne(() => User, (User) => User.pages)
   @JoinColumn({ name: 'user_id' })

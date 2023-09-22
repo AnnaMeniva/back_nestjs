@@ -12,14 +12,14 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.userService.findOne(email)
-    const passwordIsMatch = await argon2.verify(user.password, password)
+    const user = await this.userService.findAll({ email })
+    if (!user.length) throw new UnauthorizedException('user already exist')
+    const passwordIsMatch = await argon2.verify(user[0].password, password)
 
-    if (user && passwordIsMatch) {
-      return user
+    if (user.length && passwordIsMatch) {
+      return user[0]
     }
     throw new UnauthorizedException('User or password are incorrect!')
-
   }
   async login(user: IUser) {
     const { id, email } = user
