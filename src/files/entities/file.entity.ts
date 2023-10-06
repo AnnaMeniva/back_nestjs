@@ -1,3 +1,4 @@
+import { IsOptional } from 'class-validator'
 import { User } from 'src/user/entities/user.entity'
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 
@@ -14,10 +15,11 @@ export class File {
   id: number
 
   @Column()
+  @IsOptional()
   fileUrl: string
 
   @Column()
-  titleFile: string
+  title: string
 
   @CreateDateColumn()
   createAt: Date
@@ -26,6 +28,7 @@ export class File {
     type: 'enum',
     enum: FileTypeEnum,
   })
+  @IsOptional()
   fileType: FileTypeEnum
 
   @ManyToOne(() => User, (User) => User.files)

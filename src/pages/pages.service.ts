@@ -35,7 +35,7 @@ export class PagesService {
     return await this.pageRepository.find({
       where: {},
       order: {
-        ...sort,
+       ...sort,
       },
       relations: {
         user: true,

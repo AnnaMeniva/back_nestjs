@@ -1,42 +1,128 @@
-import { Controller,Query, Get, Post, Body, Patch, Param, Delete, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
-import { FilesService } from './files.service';
-import { CreateFileDto } from './dto/create-file.dto';
-import { UpdateFileDto } from './dto/update-file.dto';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { SortPageDto } from 'src/pages/dto/sort-page.dto';
+import {
+  Controller,
+  Query,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Req,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+} from '@nestjs/common'
+import { FilesService } from './files.service'
+import { CreateFileDto } from './dto/create-file.dto'
+import { UpdateFileDto } from './dto/update-file.dto'
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard'
+import { Express } from 'express'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { UploadService } from 'src/aws/upload.service'
+import { CurrentUser } from 'src/common/CurrentUserDecorator'
+import { SortFileDto } from './dto/sort-file.dto'
 
 @Controller('files')
 export class FilesController {
-  constructor(private readonly filesService: FilesService) {}
+  constructor(
+    private readonly filesService: FilesService,
+    private readonly uploadService: UploadService,
+  ) {}
 
-  @Post()
+  // @Get('pagination')
+  // @UseGuards(JwtAuthGuard)
+  // findAllWithPagination(
+  //   @Req() req,
+  //   @Query('page') page: number = 1,
+  //   @Query('limit') limit: number = 5,
+  // ) {
+  //   return this.filesService.findAllWithPagination(+req.user.id, +page, limit)
+  // }
+
+  @Post(':id')
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe())
   create(@Body() createFileDto: CreateFileDto, @Req() req) {
     return this.filesService.create(createFileDto, +req.user.id)
   }
 
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(
+    @Param('id') id: string,
+    @CurrentUser() user,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          // new FileTypeValidator({fileType: "image"})
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    await this.uploadService.upload(
+      file.buffer,
+      file.originalname,
+      user.id,
+      file.mimetype,
+    )
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard)
-  findAll(@Query() sort: SortPageDto) {
-    return this.filesService.findAll(sort);
+  async findAll(
+    @Query() sort: SortFileDto,
+    @CurrentUser() user,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+   
+  ) {
+    let files
+    files = await this.filesService.findAll(sort, user.id, +page, limit)
+    files = await Promise.all(
+      files.map(async (file) => {
+        const url = await this.uploadService.getObjectSignedUrl(
+          `${user.id}/${file.id}`,
+        )
+        return {
+          signedUrl: url,
+          createdDate: file.createAt,
+          title: file.title,
+          id: file.id,
+          type: file.fileType,
+        }
+      }),
+    )
+    // console.log(files)
+    // return
+    return files
   }
+
+  // @Get()
+  // @UseGuards(JwtAuthGuard)
+  // async getAllFiles(@Req() req){
+  //   return await this.uploadService.getObjectSignedUrl(req.fileUrl)
+  // }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  findOne(@Param('id') id: string) {
-    return this.filesService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    return await this.filesService.findOne(+id)
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
-  update(@Param('id') id: string, @Body() updateFileDto: UpdateFileDto) {
-    return this.filesService.update(+id, updateFileDto);
+  async update(@Param('id') id: string, @Body() updateFileDto: UpdateFileDto) {
+    return await this.filesService.update(+id, updateFileDto)
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  remove(@Param('id') id: string) {
-    return this.filesService.remove(+id);
+  async remove(@Param('id') id: string) {
+    return await this.filesService.remove(+id)
   }
 }
