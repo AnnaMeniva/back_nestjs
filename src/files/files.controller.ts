@@ -19,11 +19,12 @@ import { FilesService } from './files.service'
 import { CreateFileDto } from './dto/create-file.dto'
 import { UpdateFileDto } from './dto/update-file.dto'
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard'
-import { Express } from 'express'
+import { Express, query } from 'express'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { UploadService } from 'src/aws/upload.service'
 import { CurrentUser } from 'src/common/CurrentUserDecorator'
 import { SortFileDto } from './dto/sort-file.dto'
+import { SearchDto } from './dto/search-file.dto'
 
 @Controller('files')
 export class FilesController {
@@ -76,15 +77,16 @@ export class FilesController {
   @UseGuards(JwtAuthGuard)
   async findAll(
     @Query() sort: SortFileDto,
+    @Query('title') search: SearchDto ,
     @CurrentUser() user,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
-   
   ) {
     let files
-    files = await this.filesService.findAll(sort, user.id, +page, limit)
+    files = await this.filesService.findAll(sort, user.id, +page, limit, search)
+
     files = await Promise.all(
-      files.map(async (file) => {
+      files?.map(async (file) => {
         const url = await this.uploadService.getObjectSignedUrl(
           `${user.id}/${file.id}`,
         )
@@ -97,16 +99,8 @@ export class FilesController {
         }
       }),
     )
-    // console.log(files)
-    // return
     return files
   }
-
-  // @Get()
-  // @UseGuards(JwtAuthGuard)
-  // async getAllFiles(@Req() req){
-  //   return await this.uploadService.getObjectSignedUrl(req.fileUrl)
-  // }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)

@@ -1,18 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { CreateFileDto } from './dto/create-file.dto'
 import { UpdateFileDto } from './dto/update-file.dto'
-import { Repository } from 'typeorm'
+import { ILike, Repository } from 'typeorm'
 import { File, FileTypeEnum } from './entities/file.entity'
 import { InjectRepository } from '@nestjs/typeorm'
 import { SortFileDto } from './dto/sort-file.dto'
+import { SearchDto } from './dto/search-file.dto'
 
 @Injectable()
 export class FilesService {
   constructor(
     @InjectRepository(File)
     private readonly fileRepository: Repository<File>, // private readonly uploadService: UploadService,
-    // private readonly configService: ConfigService,
-  ) {}
+  ) // private readonly configService: ConfigService,
+  {}
 
   async create(createFileDto: CreateFileDto, id: number) {
     const newFile = {
@@ -26,12 +27,20 @@ export class FilesService {
     return this.fileRepository.save(newFile)
   }
 
-  async findAll(sort: SortFileDto, id: number, page: number, limit: number) {
+  async findAll(
+    sort: SortFileDto,
+    id: number,
+    page: number,
+    limit: number,
+    search?: SearchDto,
+  ) {
+    const query = search ? {title: ILike(`%${search}%`)} : undefined
     return this.fileRepository.find({
       where: {
         user: {
           id,
         },
+        ...query      
       },
       order: { createAt: 'DESC' },
       take: limit,
@@ -61,7 +70,7 @@ export class FilesService {
   //       user: true,
   //     },
   //     order: { createAt: 'DESC' },
-    
+
   //   })
   //   return files
   // }
